@@ -1,0 +1,147 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<script type="text/javascript">
+	window.onload = function () {
+
+		var dps = []; // dataPoints
+
+		var chart = new CanvasJS.Chart("chartContainer",{
+			title :{
+				text: "D-Sign Home"
+			},
+			axisY:{
+			    minimum: 25,
+				maximum: 35
+     },			
+			data: [{
+				type: "line",
+				dataPoints: dps 
+			}]
+		});
+
+		var xVal = 0;
+		var yVal = 40;	
+		var updateInterval = 1000;
+		var dataLength = 10; // number of dataPoints visible at any point
+		
+		//FireBase
+		//DSJ: added the array to show all data
+		var temparaturePlot = [];
+		var lablePlot = [];
+		var dataPoints = 0;
+		var firstTimeRetrive = 0;
+		
+		
+		function getFireBaseData() {
+		var tempsArray = [];
+		var tArray = [];
+		var sessionArray = [];
+		var currTemp = '';
+
+
+		var dataRef = new Firebase('https://myawesomearduino.firebaseio.com/temperature');
+		dataRef.on('value', function(snapshot) {
+		var t = snapshot.val();
+		var count = 0;
+		
+		temparaturePlot = [];
+
+		for (var key in t) {
+		  if (t.hasOwnProperty(key)) {		    
+		    var dt = [];	    
+		    dt[0] = count;
+		    dt[1] = parseFloat(t[key]);
+		    tempsArray = [];
+		    tempsArray.push(dt);
+		    tArray = [];
+		    tArray.push(dt[1]);
+		    count++;
+			temparaturePlot.push(parseFloat(tempsArray[0][1].toString()));
+			lablePlot.push(count.toString());
+		  }
+		}
+		sessionArray.push(tempsArray[0])
+		//console.log(tempsArray)
+		//$.plot($("#chart1"), [ temparaturePlot ]);
+		currTemp = tempsArray[0][1].toString();
+		//$('#tempMsg').show();
+		//$("#currTemp").text(currTemp);
+		
+		if (dataPoints == 0) //first time data retrieval
+		{
+		firstTimeRetrive = 1;
+		}
+		
+		if (temparaturePlot.length > dataPoints)
+		{
+		//trigger new data point add event
+		dataPoints = temparaturePlot.length;
+		}
+	});	
+	
+	//window.myLine.update();
+  
+}		
+
+		var updateChart = function (count) {
+			//count = count || 1;
+			//count = temparaturePlot.length;
+			
+			//if first time data retrieval, get all data otherwise the last data
+			
+			getFireBaseData();
+			
+			if (firstTimeRetrive == 1) //get all data
+			{
+			count = temparaturePlot.length;
+			firstTimeRetrive = 0;			
+			
+			for (var j = 0; j < count; j++) {
+				dps.push({
+					x: xVal,
+					y: parseFloat(parseFloat(temparaturePlot[j]))
+				});
+				xVal++;
+			};			
+			
+			
+			}
+			else //append the last reading from FireBase
+			{
+			dps.push({
+					x: xVal,
+					y: parseFloat(parseFloat(temparaturePlot[temparaturePlot.length - 1]))
+				});
+				xVal++;
+			}
+
+			// count is number of times loop runs to generate random dataPoints.
+
+			if (dps.length > dataLength)
+			{
+				//dps.shift();	// enable this if you want to shift the chart with live feed			
+			}
+			
+			chart.render();		
+
+		};
+
+		// generates first set of dataPoints
+		updateChart(dataLength); 
+
+		// update chart after specified time. 
+		setInterval(function(){updateChart()}, updateInterval); 
+
+	}
+	</script>
+	<script type="text/javascript" src="assets/script/canvasjs.min.js"></script>
+	<!--FireBase-->
+	<script type='text/javascript' src='https://cdn.firebase.com/js/client/2.4.1/firebase.js'></script>
+</head>
+<body>
+	<div id="chartContainer" style="height: 300px; width:100%;">
+	</div>
+</body>
+</html>
